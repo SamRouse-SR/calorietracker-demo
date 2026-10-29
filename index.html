@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Calorie Journal</title>
+<style>
+:root{--bg:#faf7f2;--card:#fff;--ink:#2a2622;--mute:#7a7167;--line:#e8e1d6;--accent:#d9622b;--accent-ink:#fff;color-scheme:light;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1c1a17;--card:#27241f;--ink:#f1ece4;--mute:#a49b8f;--line:#3a352e;--accent:#ee7a43;--accent-ink:#1c1a17;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1c1a17;--card:#27241f;--ink:#f1ece4;--mute:#a49b8f;--line:#3a352e;--accent:#ee7a43;--accent-ink:#1c1a17;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:980px;margin:0 auto;padding:20px 16px 40px}
+h1{font:600 1.7rem Georgia,"Times New Roman",serif;margin:0}
+h2{font-size:1.05rem;margin:0 0 12px}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:18px}
+.sub{color:var(--mute);font-size:.9rem}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:760px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
+.grid .card{margin-bottom:0}
+input,select,button{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:8px 10px}
+button{cursor:pointer}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+button.ghost{background:none;border:none;color:var(--mute);padding:4px 8px}
+button.ghost:hover{color:var(--accent)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.row>input[type=text]{flex:1;min-width:120px}
+.row>input[type=number]{width:100px}
+.bar{height:10px;background:var(--line);border-radius:6px;overflow:hidden;margin:8px 0 4px}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:6px}
+.slot{border-top:1px solid var(--line);padding:10px 0}
+.slot:first-child{border-top:none}
+.slot-h{display:flex;justify-content:space-between;font-weight:600}
+.slot-h span:last-child{color:var(--mute);font-weight:500;font-size:.9rem}
+.meal{display:flex;justify-content:space-between;align-items:center;padding:3px 0 3px 12px;color:var(--mute)}
+.meal b{color:var(--ink);font-weight:500;margin-right:4px}
+.tabs{display:flex;gap:4px;margin-bottom:12px}
+.tabs button{flex:1}
+.tabs button.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.pie{display:flex;flex-direction:column;align-items:center;gap:12px}
+.pie svg{width:100%;max-width:240px;height:auto}
+.legend{width:100%;font-size:.92rem}
+.legend div{display:flex;align-items:center;gap:8px;padding:2px 0}
+.legend i{width:12px;height:12px;border-radius:3px;flex:none}
+.legend span:nth-child(3){margin-left:auto;color:var(--mute)}
+.empty{color:var(--mute);text-align:center;padding:24px 0}
+.stats{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px}
+.stats div{font-size:.85rem;color:var(--mute)}
+.stats b{display:block;font-size:1.3rem;color:var(--ink)}
+.sl{display:flex;gap:8px;align-items:center;margin-bottom:6px}
+.sl input[type=text]{flex:1;min-width:0}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div><h1>Calorie Journal</h1><div class="sub" id="dateLabel"></div></div>
+  <div class="row">
+    <button id="prev" aria-label="Previous day">‹</button>
+    <input type="date" id="date">
+    <button id="next" aria-label="Next day">›</button>
+    <button id="today">Today</button>
+  </div>
+</header>
+
+<div class="grid">
+  <section class="card">
+    <h2>Today’s meals</h2>
+    <div class="row" style="margin-bottom:6px">
+      <select id="mSlot"></select>
+      <input type="text" id="mName" placeholder="Food or meal">
+      <input type="number" id="mKcal" placeholder="kcal" min="0">
+      <button class="primary" id="add">Add</button>
+    </div>
+    <div class="stats"><div><b id="total">0</b>eaten</div><div><b id="left">0</b>remaining</div>
+      <div><b><input type="number" id="goal" min="0" style="width:90px;padding:2px 6px"></b>daily goal</div></div>
+    <div class="bar"><i id="barFill" style="width:0"></i></div>
+    <div id="timetable"></div>
+  </section>
+
+  <section class="card">
+    <h2>Calories summary</h2>
+    <div class="tabs" id="tabs">
+      <button data-p="day" class="on">Day</button><button data-p="week">Week</button>
+      <button data-p="month">Month</button><button data-p="year">Year</button>
+    </div>
+    <div class="sub" id="rangeLabel" style="text-align:center;margin-bottom:8px"></div>
+    <div class="pie"><div id="pie"></div><div class="legend" id="legend"></div></div>
+    <div class="stats" style="margin-top:12px;justify-content:center" id="pstats"></div>
+  </section>
+</div>
+
+<section class="card" style="margin-top:16px">
+  <h2>My meal timetable</h2>
+  <p class="sub" style="margin-top:0">Name your own meals and set when you usually eat them.</p>
+  <div id="slotEditor"></div>
+  <div class="row" style="margin-top:8px"><button id="addSlot">+ Add meal slot</button></div>
+</section>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+const COLORS = ["#d9622b","#3f8f6b","#4b7bd1","#c9a227","#9a5bb5","#d1578a","#4aa3b5","#8a8f3a","#7a7167"];
+let S = {
+  slots: [{id:1,name:"Breakfast",time:"08:00"},{id:2,name:"Lunch",time:"12:30"},{id:3,name:"Snack",time:"16:00"},{id:4,name:"Dinner",time:"19:00"}],
+  meals: [], goal: 2000, nid: 10
+};
+try { const r = localStorage.getItem("calorie-journal-v1"); if (r) S = Object.assign(S, JSON.parse(r)); } catch (e) {}
+const save = () => { try { localStorage.setItem("calorie-journal-v1", JSON.stringify(S)); } catch (e) {} };
+
+const iso = d => { const z = new Date(d - d.getTimezoneOffset() * 60000); return z.toISOString().slice(0, 10); };
+const parse = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+let date = iso(new Date()), period = "day";
+
+function range() {
+  const d = parse(date); let a, b;
+  if (period === "day") { a = b = d; }
+  else if (period === "week") { const off = (d.getDay() + 6) % 7; a = new Date(d.getFullYear(), d.getMonth(), d.getDate() - off); b = new Date(a.getFullYear(), a.getMonth(), a.getDate() + 6); }
+  else if (period === "month") { a = new Date(d.getFullYear(), d.getMonth(), 1); b = new Date(d.getFullYear(), d.getMonth() + 1, 0); }
+  else { a = new Date(d.getFullYear(), 0, 1); b = new Date(d.getFullYear(), 11, 31); }
+  return [iso(a), iso(b), Math.round((b - a) / 864e5) + 1];
+}
+const mealsIn = (a, b) => S.meals.filter(m => m.date >= a && m.date <= b);
+const sum = l => l.reduce((t, m) => t + m.kcal, 0);
+function el(tag, cls, txt) { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+
+function renderSelect() {
+  const sel = $("#mSlot"), cur = sel.value; sel.innerHTML = "";
+  [...S.slots].sort((x, y) => x.time.localeCompare(y.time)).forEach(s => { const o = el("option", "", s.name); o.value = s.name; sel.appendChild(o); });
+  if (cur) sel.value = cur;
+}
+
+function renderDay() {
+  const day = S.meals.filter(m => m.date === date), total = sum(day);
+  $("#dateLabel").textContent = parse(date).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  $("#date").value = date;
+  $("#total").textContent = total;
+  $("#left").textContent = Math.max(0, S.goal - total);
+  $("#goal").value = S.goal;
+  $("#barFill").style.width = Math.min(100, S.goal ? total / S.goal * 100 : 0) + "%";
+  const box = $("#timetable"); box.innerHTML = "";
+  const names = new Set(S.slots.map(s => s.name));
+  const groups = [...S.slots].sort((x, y) => x.time.localeCompare(y.time)).map(s => ({ name: s.name, time: s.time }));
+  if (day.some(m => !names.has(m.slot))) groups.push({ name: "Other", time: "" });
+  groups.forEach(g => {
+    const items = day.filter(m => g.name === "Other" ? !names.has(m.slot) : m.slot === g.name);
+    const wrap = el("div", "slot"), h = el("div", "slot-h");
+    h.append(el("span", "", g.name + (g.time ? " · " + g.time : "")), el("span", "", sum(items) + " kcal"));
+    wrap.appendChild(h);
+    items.forEach(m => {
+      const r = el("div", "meal"), l = el("span"); l.append(el("b", "", m.name), document.createTextNode(m.kcal + " kcal"));
+      const x = el("button", "ghost", "✕"); x.setAttribute("aria-label", "Delete " + m.name);
+      x.onclick = () => { S.meals = S.meals.filter(z => z.id !== m.id); save(); render(); };
+      r.append(l, x); wrap.appendChild(r);
+    });
+    box.appendChild(wrap);
+  });
+}
+
+function renderChart() {
+  const [a, b, days] = range(), list = mealsIn(a, b), total = sum(list);
+  const fmt = s => parse(s).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  $("#rangeLabel").textContent = period === "day" ? fmt(a) : fmt(a) + " – " + fmt(b);
+  const by = {}; list.forEach(m => by[m.slot] = (by[m.slot] || 0) + m.kcal);
+  const data = Object.entries(by).sort((x, y) => y[1] - x[1]);
+  const pie = $("#pie"), lg = $("#legend"); pie.innerHTML = ""; lg.innerHTML = "";
+  const ps = $("#pstats"); ps.innerHTML = "";
+  if (!total) { pie.appendChild(el("div", "empty", "No meals logged for this period.")); return; }
+  const NS = "http://www.w3.org/2000/svg", svg = document.createElementNS(NS, "svg");
+  svg.setAttribute("viewBox", "-100 -100 200 200");
+  const pt = (ang, r) => [r * Math.sin(ang), -r * Math.cos(ang)];
+  let start = 0;
+  data.forEach(([name, v], i) => {
+    const col = COLORS[i % COLORS.length], frac = v / total, end = start + frac * 2 * Math.PI;
+    let node;
+    if (data.length === 1) { node = document.createElementNS(NS, "circle"); node.setAttribute("r", 95); }
+    else {
+      const [x1, y1] = pt(start, 95), [x2, y2] = pt(end, 95);
+      node = document.createElementNS(NS, "path");
+      node.setAttribute("d", `M0 0L${x1} ${y1}A95 95 0 ${frac > .5 ? 1 : 0} 1 ${x2} ${y2}Z`);
+    }
+    node.setAttribute("fill", col); node.setAttribute("stroke", getComputedStyle(document.body).backgroundColor); node.setAttribute("stroke-width", 2);
+    const t = document.createElementNS(NS, "title"); t.textContent = `${name}: ${v} kcal`; node.appendChild(t);
+    svg.appendChild(node); start = end;
+    const row = el("div"), sw = el("i"); sw.style.background = col;
+    row.append(sw, el("span", "", name), el("span", "", `${v} kcal · ${Math.round(frac * 100)}%`)); lg.appendChild(row);
+  });
+  const hole = document.createElementNS(NS, "circle"); hole.setAttribute("r", 52); hole.setAttribute("fill", getComputedStyle(document.body).backgroundColor === "" ? "#fff" : getComputedStyle($(".card")).backgroundColor);
+  const t1 = document.createElementNS(NS, "text"), t2 = document.createElementNS(NS, "text");
+  [t1, t2].forEach(t => { t.setAttribute("text-anchor", "middle"); t.setAttribute("fill", getComputedStyle(document.body).color); });
+  t1.setAttribute("y", 4); t1.setAttribute("font-size", 22); t1.setAttribute("font-weight", 700); t1.textContent = total;
+  t2.setAttribute("y", 22); t2.setAttribute("font-size", 11); t2.textContent = "kcal";
+  svg.append(hole, t1, t2); pie.appendChild(svg);
+  const dayCount = new Set(list.map(m => m.date)).size;
+  const add = (v, l) => { const d = el("div", "", l), bb = el("b", "", v); d.prepend(bb); ps.appendChild(d); };
+  add(total, "total kcal");
+  if (period !== "day") { add(Math.round(total / dayCount), "avg per logged day"); add(dayCount + "/" + days, "days logged"); }
+}
+
+function renderSlots() {
+  const box = $("#slotEditor"); box.innerHTML = "";
+  S.slots.forEach(s => {
+    const r = el("div", "sl"), n = el("input"), t = el("input"), x = el("button", "ghost", "✕");
+    n.type = "text"; n.value = s.name; n.setAttribute("aria-label", "Meal name");
+    t.type = "time"; t.value = s.time; t.setAttribute("aria-label", "Meal time");
+    n.onchange = () => { const old = s.name, nu = n.value.trim() || old; S.meals.forEach(m => { if (m.slot === old) m.slot = nu; }); s.name = nu; save(); render(); };
+    t.onchange = () => { s.time = t.value || "00:00"; save(); render(); };
+    x.onclick = () => { S.slots = S.slots.filter(z => z.id !== s.id); save(); render(); };
+    x.setAttribute("aria-label", "Remove slot");
+    r.append(n, t, x); box.appendChild(r);
+  });
+}
+
+function render() { renderSelect(); renderDay(); renderChart(); renderSlots(); }
+
+$("#add").onclick = () => {
+  const name = $("#mName").value.trim(), kcal = Math.round(+$("#mKcal").value), slot = $("#mSlot").value;
+  if (!name || !(kcal >= 0) || !slot) { $("#mName").focus(); return; }
+  S.meals.push({ id: S.nid++, date, slot, name, kcal });
+  $("#mName").value = ""; $("#mKcal").value = ""; save(); render(); $("#mName").focus();
+};
+["#mName", "#mKcal"].forEach(s => $(s).addEventListener("keydown", e => { if (e.key === "Enter") $("#add").click(); }));
+$("#goal").onchange = e => { S.goal = Math.max(0, +e.target.value || 0); save(); render(); };
+$("#addSlot").onclick = () => { S.slots.push({ id: S.nid++, name: "New meal", time: "10:00" }); save(); render(); };
+$("#date").onchange = e => { if (e.target.value) { date = e.target.value; render(); } };
+const shift = n => { const d = parse(date); d.setDate(d.getDate() + n); date = iso(d); render(); };
+$("#prev").onclick = () => shift(-1); $("#next").onclick = () => shift(1);
+$("#today").onclick = () => { date = iso(new Date()); render(); };
+$("#tabs").onclick = e => {
+  const p = e.target.dataset.p; if (!p) return; period = p;
+  document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.p === p)); renderChart();
+};
+render();
+</script>
+</body>
+</html>
